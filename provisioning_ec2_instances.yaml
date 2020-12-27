@@ -5,6 +5,12 @@
   vars_files:
     - ./variables.yaml
   tasks:
+  - name: debug credentials key id
+    debug:
+      msg: "{{vaulted_aws_key_id}}"
+  - name: debug credentials secret
+    debug:
+      msg: "{{vaulted_aws_secret_key}}"
   - name: ensure required packages are present
     apt:
       update_cache: yes
@@ -27,9 +33,6 @@
   - name: ensure boxfuse source code is compiled
     shell:
       cmd: mvn -f /usr/local/boxfuse/pom.xml package
-  - name: debug credentials
-    debug:
-      msg: "here iam"
   - name: put artifact to s3 repo
     amazon.aws.aws_s3:
       aws_access_key: "{{vaulted_aws_key_id}}"
