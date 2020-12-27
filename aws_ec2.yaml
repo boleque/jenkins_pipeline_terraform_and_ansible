@@ -1,0 +1,8 @@
+plugin: amazon.aws.aws_ec2
+regions:
+  - us-east-2
+filter:
+  instance.group-id: sg-0c85fe76fbd2ebded
+keyed_groups:
+  - prefix: boxfuse
+    key: tags.Name
