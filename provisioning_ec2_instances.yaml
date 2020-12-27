@@ -1,0 +1,74 @@
+- name: builder provisioning
+  hosts: boxfuse_builder
+  remote_user: ubuntu
+  become: true
+  vars_files:
+    - ./variables.yaml
+  tasks:
+  - name: ensure required packages are present
+    apt:
+      update_cache: yes
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+        - git
+        - default-jdk
+        - maven
+        - python3
+        - python3-pip
+  - name: ensure boto3 is present
+    shell:
+      cmd: pip3 install boto3
+  - name: ensure boxfuse source code is cloned
+    git:
+      repo: https://github.com/boxfuse/boxfuse-sample-java-war-hello.git
+      dest: /usr/local/boxfuse
+  - name: ensure boxfuse source code is compiled
+    shell:
+      cmd: mvn -f /usr/local/boxfuse/pom.xml package
+  - name: debug credentials
+    debug:
+      msg: "here iam"
+  - name: put artifact to s3 repo
+    amazon.aws.aws_s3:
+      aws_access_key: "{{vaulted_aws_key_id}}"
+      aws_secret_key: "{{vaulted_aws_secret_key}}"
+      bucket: backet.boleque.com
+      object: /artifacts/hello-1.0.war
+      src: /usr/local/boxfuse/target/hello-1.0.war
+      mode: put
+
+- name: production provisioning
+  hosts: boxfuse_production
+  remote_user: ubuntu
+  become: yes
+  vars_files:
+    - ./variables.yaml
+
+  tasks:
+  - name: ensure required packages are exist
+    apt:
+      update_cache: yes
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+        - tomcat9
+        - python3
+        - python3-pip
+  - name: ensure boto3 is present
+    shell:
+      cmd: pip3 install boto3
+  - name: ensure tomcat is started
+    service:
+      name: tomcat9
+      state: started
+  - name: get artifact from s3 repo
+    amazon.aws.aws_s3:
+      aws_access_key: "{{vaulted_aws_key_id}}"
+      aws_secret_key: "{{vaulted_aws_secret_key}}"
+      bucket: backet.boleque.com
+      object: /artifacts/hello-1.0.war
+      dest: /var/lib/tomcat9/webapps/hello-1.0.war
+      mode: get
